@@ -39,6 +39,7 @@ func mustReadConfig(configPath string) Config {
 
 	var config Config
 	reader := csv.NewReader(file)
+	defer file.Close()
 	records, err := reader.ReadAll()
 	if err != nil {
 		log.Fatalf("the config file '%s' is malformed: %v", configPath, err)

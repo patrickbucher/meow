@@ -31,7 +31,9 @@ type Endpoint struct {
 	FailAfter uint8
 }
 
-var identifierPattern = regexp.MustCompile("^[a-z][-a-z0-9]+")
+const idPatternRaw = "^[a-z][-a-z0-9]+$"
+
+var idPattern = regexp.MustCompile(idPatternRaw)
 
 // NewDefaultEndpoint creates a new Endpoint from rawURL, which is parsed. An
 // endpoint is returned, if the rawURL is valid, and an error (indicating the
@@ -66,10 +68,14 @@ var methodsAllowed = map[string]bool{
 // the fields in the following order: 1) Identifier, 2) URL, 3) Method, 4)
 // StatusOnline, 5) Frequency, 6) FailAfter
 func EndpointFrom(record []string) (*Endpoint, error) {
-	if len(record) < 6 {
-		return nil, fmt.Errorf(`malformed record "%s" (needs 5 fields)`, record)
+	const nFields = 6
+	if len(record) < nFields {
+		return nil, fmt.Errorf(`malformed record "%s" (needs %d fields)`, record, nFields)
 	}
 	id := record[0]
+	if !idPattern.MatchString(id) {
+		return nil, fmt.Errorf(`id "%s" does not match pattern %s`, id, idPatternRaw)
+	}
 	parsedURL, err := url.Parse(record[1])
 	if err != nil {
 		return nil, fmt.Errorf(`parse URL "%s": %v`, record[1], err)

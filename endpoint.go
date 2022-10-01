@@ -44,7 +44,7 @@ func NewDefaultEndpoint(rawURL string) (*Endpoint, error) {
 	}, nil
 }
 
-// String returns the Endponit's  fields separated by a space.
+// String returns the Endpoint's  fields separated by a space.
 func (e Endpoint) String() string {
 	return fmt.Sprintf("%s %s %d %v %d",
 		e.URL, e.Method, e.StatusOnline, e.Frequency, e.FailAfter)

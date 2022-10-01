@@ -2,6 +2,8 @@
 
 meow is a simple monitoring system for unauthenticated HTTP endpoints.
 
+![Monitoring Murzik](assets/murzik.jpg)
+
 meow consists of the following components:
 
 1. A configuration server to manage the endpoints to be monitored.

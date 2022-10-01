@@ -4,12 +4,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"time"
 )
 
 // Endpoint is something to monitor with according rules.
 type Endpoint struct {
+	// Identifier identifies the endpoint.
+	Identifier string
+
 	// URL is the URL to be requested.
 	URL *url.URL
 
@@ -27,15 +31,18 @@ type Endpoint struct {
 	FailAfter uint8
 }
 
+var identifierPattern = regexp.MustCompile("^[a-z][-a-z0-9]+")
+
 // NewDefaultEndpoint creates a new Endpoint from rawURL, which is parsed. An
 // endpoint is returned, if the rawURL is valid, and an error (indicating the
 // parse error) otherwise.
-func NewDefaultEndpoint(rawURL string) (*Endpoint, error) {
+func NewDefaultEndpoint(id string, rawURL string) (*Endpoint, error) {
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, err
 	}
 	return &Endpoint{
+		Identifier:   id,
 		URL:          parsedURL,
 		Method:       http.MethodGet,
 		StatusOnline: http.StatusOK,
@@ -46,7 +53,7 @@ func NewDefaultEndpoint(rawURL string) (*Endpoint, error) {
 
 // String returns the Endpoint's  fields separated by a space.
 func (e Endpoint) String() string {
-	return fmt.Sprintf("%s %s %d %v %d",
+	return fmt.Sprintf("%s %s %s %d %v %d", e.Identifier,
 		e.URL, e.Method, e.StatusOnline, e.Frequency, e.FailAfter)
 }
 
@@ -56,33 +63,35 @@ var methodsAllowed = map[string]bool{
 }
 
 // EndpointFrom creates a new Endpoint from the given record, which must provide
-// the fields in the following order: 1) URL, 2) Method, 3) StatusOnline,
-// 4) Frequency, 5) FailAfter
+// the fields in the following order: 1) Identifier, 2) URL, 3) Method, 4)
+// StatusOnline, 5) Frequency, 6) FailAfter
 func EndpointFrom(record []string) (*Endpoint, error) {
-	if len(record) < 5 {
+	if len(record) < 6 {
 		return nil, fmt.Errorf(`malformed record "%s" (needs 5 fields)`, record)
 	}
-	parsedURL, err := url.Parse(record[0])
+	id := record[0]
+	parsedURL, err := url.Parse(record[1])
 	if err != nil {
-		return nil, fmt.Errorf(`parse URL "%s": %v`, record[0], err)
+		return nil, fmt.Errorf(`parse URL "%s": %v`, record[1], err)
 	}
-	method := record[1]
+	method := record[2]
 	if allowed, ok := methodsAllowed[method]; !allowed || !ok {
 		return nil, fmt.Errorf(`"%s" is not an allowed method`, method)
 	}
-	statusOnline, err := strconv.Atoi(record[2])
+	statusOnline, err := strconv.Atoi(record[3])
 	if err != nil || statusOnline < 100 || statusOnline > 999 {
-		return nil, fmt.Errorf(`"%s" is not a valid status code`, record[2])
+		return nil, fmt.Errorf(`"%s" is not a valid status code`, record[3])
 	}
-	frequency, err := time.ParseDuration(record[3])
+	frequency, err := time.ParseDuration(record[4])
 	if err != nil {
-		return nil, fmt.Errorf(`"%s" is not a valid duration`, record[3])
+		return nil, fmt.Errorf(`"%s" is not a valid duration`, record[4])
 	}
-	failAfter, err := strconv.Atoi(record[4])
+	failAfter, err := strconv.Atoi(record[5])
 	if err != nil {
-		return nil, fmt.Errorf(`"%s" is not a number`, record[4])
+		return nil, fmt.Errorf(`"%s" is not a number`, record[5])
 	}
 	return &Endpoint{
+		Identifier:   id,
 		URL:          parsedURL,
 		Method:       method,
 		StatusOnline: uint16(statusOnline),

@@ -25,3 +25,29 @@ indications:
 4. StatusOnline: Response HTTP status code indicating success (e.g. `200`).
 5. Frequency: How often the request should be performed (e.g. `1m30s`).
 6. FailAfter: After how many failing requests the endpoint is considered offline.
+
+Get an endpoint by its identifier:
+
+```bash
+curl -X GET localhost:8000/endpoints/libvirt
+{"identifier":"libvirt","url":"https://libvirt.org/","method":"GET","status_online":200,"frequency":"1m0s","fail_after":5}
+```
+
+Post an endpoint using a JSON payload 
+
+```bash
+curl -X POST localhost:8000/endpoints/hackernews -d @endpoint.json
+```
+
+With `endpoint.json` defined as:
+
+```json
+{
+    "identifier": "hackernews",
+    "url": "https://news.ycombinator.com/",
+    "method": "GET",
+    "status_online": 200,
+    "frequency": "1m",
+    "fail_after": 5
+}
+```

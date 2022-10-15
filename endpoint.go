@@ -1,6 +1,7 @@
 package meow
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -31,6 +32,17 @@ type Endpoint struct {
 	FailAfter uint8
 }
 
+// EndpointPayload contains the same fields as Endpoint, but only as
+// serializable primitives with JSON tags.
+type EndpointPayload struct {
+	Identifier   string `json:"identifier"`
+	URL          string `json:"url"`
+	Method       string `json:"method"`
+	StatusOnline uint16 `json:"status_online"`
+	Frequency    string `json:"frequency"`
+	FailAfter    uint8  `json:"fail_after"`
+}
+
 const idPatternRaw = "^[a-z][-a-z0-9]+$"
 
 var idPattern = regexp.MustCompile(idPatternRaw)
@@ -53,10 +65,28 @@ func NewDefaultEndpoint(id string, rawURL string) (*Endpoint, error) {
 	}, nil
 }
 
-// String returns the Endpoint's  fields separated by a space.
+// String returns the Endpoint's fields separated by a space.
 func (e Endpoint) String() string {
 	return fmt.Sprintf("%s %s %s %d %v %d", e.Identifier,
 		e.URL, e.Method, e.StatusOnline, e.Frequency, e.FailAfter)
+}
+
+// JSON returns the Endpoint's fields as a JSON data, or an error, if it cannot
+// be serialized.
+func (e Endpoint) JSON() ([]byte, error) {
+	payload := EndpointPayload{
+		e.Identifier,
+		e.URL.String(),
+		e.Method,
+		e.StatusOnline,
+		e.Frequency.String(),
+		e.FailAfter,
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("marshal endpoint %v as JSON: %v", e, err)
+	}
+	return data, nil
 }
 
 var methodsAllowed = map[string]bool{
@@ -64,10 +94,44 @@ var methodsAllowed = map[string]bool{
 	http.MethodHead: true,
 }
 
-// EndpointFrom creates a new Endpoint from the given record, which must provide
-// the fields in the following order: 1) Identifier, 2) URL, 3) Method, 4)
-// StatusOnline, 5) Frequency, 6) FailAfter
-func EndpointFrom(record []string) (*Endpoint, error) {
+// EndpointFromJSON creates a new endpoint from a given JSON structure.
+func EndpointFromJSON(rawJSON string) (*Endpoint, error) {
+	var payload EndpointPayload
+	if err := json.Unmarshal([]byte(rawJSON), &payload); err != nil {
+		return nil, fmt.Errorf(`unmarshal raw json "%s": %v`, rawJSON, err)
+	}
+	if !idPattern.MatchString(payload.Identifier) {
+		return nil, fmt.Errorf(`identifier "%s" does not match pattern "%s"`,
+			payload.Identifier, idPatternRaw)
+	}
+	parsedURL, err := url.Parse(payload.URL)
+	if err != nil {
+		return nil, fmt.Errorf(`parse URL "%s": %v`, payload.URL, err)
+	}
+	if allowed, ok := methodsAllowed[payload.Method]; !allowed || !ok {
+		return nil, fmt.Errorf(`"%s" is not an allowed method`, payload.Method)
+	}
+	if payload.StatusOnline < 100 || payload.StatusOnline > 999 {
+		return nil, fmt.Errorf(`"%d" is not a valid status code`, payload.StatusOnline)
+	}
+	frequency, err := time.ParseDuration(payload.Frequency)
+	if err != nil {
+		return nil, fmt.Errorf(`"%s" is not a valid duration`, payload.Frequency)
+	}
+	return &Endpoint{
+		payload.Identifier,
+		parsedURL,
+		payload.Method,
+		payload.StatusOnline,
+		frequency,
+		payload.FailAfter,
+	}, nil
+}
+
+// EndpointFromRecord creates a new Endpoint from the given record, which must
+// provide the fields in the following order: 1) Identifier, 2) URL, 3) Method,
+// 4) StatusOnline, 5) Frequency, 6) FailAfter
+func EndpointFromRecord(record []string) (*Endpoint, error) {
 	const nFields = 6
 	if len(record) < nFields {
 		return nil, fmt.Errorf(`malformed record "%s" (needs %d fields)`, record, nFields)

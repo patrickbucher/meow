@@ -33,7 +33,7 @@ curl -X GET localhost:8000/endpoints/libvirt
 {"identifier":"libvirt","url":"https://libvirt.org/","method":"GET","status_online":200,"frequency":"1m0s","fail_after":5}
 ```
 
-Post an endpoint using a JSON payload 
+Post an endpoint using a JSON payload:
 
 ```bash
 curl -X POST localhost:8000/endpoints/hackernews -d @endpoint.json

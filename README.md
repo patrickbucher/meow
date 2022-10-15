@@ -33,6 +33,13 @@ curl -X GET localhost:8000/endpoints/libvirt
 {"identifier":"libvirt","url":"https://libvirt.org/","method":"GET","status_online":200,"frequency":"1m0s","fail_after":5}
 ```
 
+Get all endpoints:
+
+```bash
+curl -X GET localhost:8000/endpoints
+[{"identifier":"go-dev","url":"https://go.dev/doc/","method":"HEAD","status_online":200,"frequency":"5m0s","fail_after":1},{"identifier":"libvirt","url":"https://libvirt.org/","method":"GET","status_online":200,"frequency":"1m0s","fail_after":5},{"identifier":"frickelbude","url":"https://code.frickelbude.ch/api/v1/version","method":"GET","status_online":200,"frequency":"1m0s","fail_after":3}]
+```
+
 Post an endpoint using a JSON payload:
 
 ```bash

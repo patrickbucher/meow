@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/csv"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -46,6 +47,9 @@ func main() {
 				r.RemoteAddr, r.Method)
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
+	})
+	http.HandleFunc("/endpoints", func(w http.ResponseWriter, r *http.Request) {
+		getEndpoints(w, r)
 	})
 
 	listenTo := fmt.Sprintf("%s:%d", *addr, *port)
@@ -115,6 +119,35 @@ func postEndpoint(w http.ResponseWriter, r *http.Request, file string) {
 	}
 	cfg.mu.Unlock()
 	w.WriteHeader(status)
+}
+
+func getEndpoints(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		log.Printf("request from %s rejected: method %s not allowed",
+			r.RemoteAddr, r.Method)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	log.Printf("GET %s from %s", r.URL, r.RemoteAddr)
+	payloads := make([]meow.EndpointPayload, 0)
+	for _, endpoint := range cfg.config {
+		payload := meow.EndpointPayload{
+			Identifier:   endpoint.Identifier,
+			URL:          endpoint.URL.String(),
+			Method:       endpoint.Method,
+			StatusOnline: endpoint.StatusOnline,
+			Frequency:    endpoint.Frequency.String(),
+			FailAfter:    endpoint.FailAfter,
+		}
+		payloads = append(payloads, payload)
+	}
+	data, err := json.Marshal(payloads)
+	if err != nil {
+		log.Printf("serialize payloads: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Write(data)
 }
 
 const endpointIdentifierPatternRaw = "^/endpoints/([a-z][-a-z0-9]+)$"

@@ -17,8 +17,10 @@ import (
 	"github.com/patrickbucher/meow"
 )
 
+// Config maps the identifiers to endpoints.
 type Config map[string]*meow.Endpoint
 
+// ConcurrentConfig wraps the config together with a mutex.
 type ConcurrentConfig struct {
 	mu     sync.RWMutex
 	config Config

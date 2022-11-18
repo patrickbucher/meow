@@ -100,6 +100,11 @@ func EndpointFromJSON(rawJSON string) (*Endpoint, error) {
 	if err := json.Unmarshal([]byte(rawJSON), &payload); err != nil {
 		return nil, fmt.Errorf(`unmarshal raw json "%s": %v`, rawJSON, err)
 	}
+	return EndpointFromPayload(payload)
+}
+
+// EndpointFromPayload creates an endpoint from the given payload.
+func EndpointFromPayload(payload EndpointPayload) (*Endpoint, error) {
 	if !idPattern.MatchString(payload.Identifier) {
 		return nil, fmt.Errorf(`identifier "%s" does not match pattern "%s"`,
 			payload.Identifier, idPatternRaw)

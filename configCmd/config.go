@@ -44,6 +44,7 @@ func main() {
 			getEndpoint(w, r)
 		case http.MethodPost:
 			postEndpoint(w, r, *file)
+		// TODO: support http.MethodDelete to delete endpoints
 		default:
 			log.Printf("request from %s rejected: method %s not allowed",
 				r.RemoteAddr, r.Method)

@@ -17,9 +17,9 @@ type Message struct {
 
 func main() {
 	// TODO: read from env variable of flag
-	webhookSuffix := "/T044JRUP4BG/B044K4NH83G/4sdI9YcCAIB352Zi4nd3enW7"
+	webhookSuffix := "[webhook]/[suffix]"
 	url := webhookPrefix + webhookSuffix
-	message := Message{Text: "Hey, hey, het, what's going on in da hood?"}
+	message := Message{Text: "Hi there. There's something to alert you about."}
 	payload, err := json.Marshal(message)
 	if err != nil {
 		log.Fatal(err)

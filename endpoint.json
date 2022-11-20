@@ -1,8 +1,8 @@
 {
-    "identifier": "hackernews",
-    "url": "https://news.ycombinator.com/",
+    "identifier": "local-canary",
+    "url": "http://localhost:9000/canary",
     "method": "GET",
     "status_online": 200,
-    "frequency": "1m",
-    "fail_after": 5
+    "frequency": "5s",
+    "fail_after": 3
 }

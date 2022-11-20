@@ -37,8 +37,8 @@ func main() {
 
 func monitor(endpoints []meow.Endpoint, logger *meow.LogFile) {
 	probe := func(e meow.Endpoint, messages chan string) {
-		messages <- fmt.Sprintf("started logging %s every %v", e.Identifier, e.Frequency)
-		timer := time.NewTimer(e.Frequency)
+		messages <- fmt.Sprintf("started probing %s every %v", e.Identifier, e.Frequency)
+		freq := time.NewTicker(e.Frequency)
 		errorCount := 0
 		lastStateOK := false
 		firstTry := true
@@ -47,31 +47,35 @@ func monitor(endpoints []meow.Endpoint, logger *meow.LogFile) {
 			start := time.Now()
 			status, err := requestForStatus(e)
 			if err != nil {
-				messages <- fmt.Sprintf("request failed: %v", err)
+				messages <- fmt.Sprintf("%c request failed: %v", meow.CrossMark, err)
 			}
 			end := time.Now()
 			duration := end.Sub(start)
 			stateOK := status == int(e.StatusOnline)
 			if stateOK {
 				if lastStateOK || firstTry {
-					messages <- fmt.Sprintf("%s is online (took %v)", e.Identifier, duration)
+					messages <- fmt.Sprintf("%c %s is online (took %v)",
+						meow.CatAvailable, e.Identifier, duration)
 				} else {
-					messages <- fmt.Sprintf("%s is online again (took %v)", e.Identifier, duration)
+					messages <- fmt.Sprintf("%c %s is online again (took %v)",
+						meow.CatAvailableAgain, e.Identifier, duration)
 				}
 				lastStateOK = true
 				errorCount = 0
 				alerted = false
 			} else {
-				messages <- fmt.Sprintf("%s is not online", e.Identifier)
 				errorCount++
+				messages <- fmt.Sprintf("%c %s is not online (%d times)",
+					meow.CatUnavailable, e.Identifier, errorCount)
 				if errorCount >= int(e.FailAfter) && !alerted {
-					messages <- fmt.Sprintf("%s is not online for %d times", e.Identifier, e.FailAfter)
+					messages <- fmt.Sprintf("%c ALERT: %s is offline (%d failed attempts)",
+						meow.CatAlert, e.Identifier, e.FailAfter)
 					alerted = true
 				}
 				lastStateOK = false
 			}
 			firstTry = false
-			<-timer.C
+			<-freq.C
 		}
 	}
 	messages := make(chan string)

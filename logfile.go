@@ -28,11 +28,9 @@ func (l LogFile) Write(data []byte) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("write to sink: %w", err)
 	}
-	fmt.Fprintf(os.Stderr, "before flushing sink %s\n", l.file.Name())
 	if err := l.Sink.Flush(); err != nil {
 		return 0, fmt.Errorf("flush sink: %w", err)
 	}
-	fmt.Fprintf(os.Stderr, "after flushing sink %s\n", l.file.Name())
 	return n, nil
 }
 

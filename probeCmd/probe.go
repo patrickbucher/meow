@@ -8,7 +8,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/patrickbucher/meow"
@@ -29,10 +31,22 @@ func main() {
 		fmt.Fprintf(os.Stderr, "open log file %s: %v\n\n", logFilePath, err)
 		os.Exit(1)
 	}
-	defer logFile.Close()
 	fmt.Fprintf(os.Stderr, "started logging to %s\n", logFilePath)
 
-	monitor(endpoints, logFile)
+	go monitor(endpoints, logFile)
+
+	done := make(chan struct{})
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		s := <-signals
+		fmt.Fprintf(os.Stderr, "signal %v received\n", s)
+		logFile.Close()
+		// TODO: now it would be a good time to archive logFilePath to S3
+		done <- struct{}{}
+	}()
+
+	<-done
 }
 
 func monitor(endpoints []meow.Endpoint, logger *meow.LogFile) {
@@ -47,6 +61,7 @@ func monitor(endpoints []meow.Endpoint, logger *meow.LogFile) {
 			start := time.Now()
 			status, err := requestForStatus(e)
 			if err != nil {
+				// TODO: adjust log format
 				messages <- fmt.Sprintf("%c request failed: %v", meow.CrossMark, err)
 			}
 			end := time.Now()
@@ -54,9 +69,11 @@ func monitor(endpoints []meow.Endpoint, logger *meow.LogFile) {
 			stateOK := status == int(e.StatusOnline)
 			if stateOK {
 				if lastStateOK || firstTry {
+					// TODO: adjust log format
 					messages <- fmt.Sprintf("%c %s is online (took %v)",
 						meow.CatAvailable, e.Identifier, duration)
 				} else {
+					// TODO: adjust log format
 					messages <- fmt.Sprintf("%c %s is online again (took %v)",
 						meow.CatAvailableAgain, e.Identifier, duration)
 				}
@@ -65,9 +82,11 @@ func monitor(endpoints []meow.Endpoint, logger *meow.LogFile) {
 				alerted = false
 			} else {
 				errorCount++
+				// TODO: adjust log format
 				messages <- fmt.Sprintf("%c %s is not online (%d times)",
 					meow.CatUnavailable, e.Identifier, errorCount)
 				if errorCount >= int(e.FailAfter) && !alerted {
+					// TODO: adjust log format
 					messages <- fmt.Sprintf("%c ALERT: %s is offline (%d failed attempts)",
 						meow.CatAlert, e.Identifier, e.FailAfter)
 					alerted = true
@@ -83,7 +102,6 @@ func monitor(endpoints []meow.Endpoint, logger *meow.LogFile) {
 		go probe(endpoint, messages)
 	}
 	for logMessage := range messages {
-		// log both to stderr and a log file
 		fmt.Fprintln(os.Stderr, logMessage)
 		logger.WriteLine(logMessage)
 	}

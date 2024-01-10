@@ -8,8 +8,7 @@ meow consists of the following components:
 
 1. A configuration server to manage the endpoints to be monitored.
 2. The actual monitoring daemon performing the requests.
-3. An alerting server to notify endpoints that went offline (and back online).
-4. A server offering a canary endpoint for local testing.
+3. A server offering a canary endpoint for local testing.
 
 ## Configuration Server (`configCmd/config.go`)
 

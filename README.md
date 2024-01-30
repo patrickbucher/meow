@@ -43,7 +43,7 @@ $ curl -X GET localhost:8000/endpoints
 Post an endpoint using a JSON payload:
 
 ```bash
-$ curl -X POST localhost:8000/endpoints/hackernews -d @endpoint.json
+$ curl -X POST localhost:8000/endpoints/ -d @endpoint.json
 ```
 
 With `endpoint.json` defined as:

@@ -87,12 +87,6 @@ func getEndpoint(w http.ResponseWriter, r *http.Request) {
 
 func postEndpoint(w http.ResponseWriter, r *http.Request, file string) {
 	log.Printf("POST %s from %s", r.URL, r.RemoteAddr)
-	identifier, err := extractEndpointIdentifier(r.URL.String())
-	if err != nil {
-		log.Printf("extract endpoint identifier of %s: %v", r.URL, err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
 	buf := bytes.NewBufferString("")
 	io.Copy(buf, r.Body)
 	defer r.Body.Close()
@@ -102,21 +96,30 @@ func postEndpoint(w http.ResponseWriter, r *http.Request, file string) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if endpoint.Identifier != identifier {
-		log.Printf("identifier mismatch: (ressource: %s, body: %s)",
-			identifier, endpoint.Identifier)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	cfg.mu.Lock()
-	_, ok := cfg.config[identifier]
+	cfg.mu.RLock()
+	_, exists := cfg.config[endpoint.Identifier]
+	cfg.mu.RUnlock()
 	var status int
-	if ok {
+	if exists {
+		// updating existing endpoint
+		identifierPathParam, err := extractEndpointIdentifier(r.URL.String())
+		if err != nil {
+			log.Printf("extract endpoint identifier of %s: %v", r.URL, err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if identifierPathParam != endpoint.Identifier {
+			log.Printf("identifier mismatch: (ressource: %s, body: %s)",
+				identifierPathParam, endpoint.Identifier)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 		status = http.StatusNoContent
 	} else {
 		status = http.StatusCreated
 	}
-	cfg.config[identifier] = endpoint
+	cfg.mu.Lock()
+	cfg.config[endpoint.Identifier] = endpoint
 	if err := writeConfig(cfg.config, file); err != nil {
 		status = http.StatusInternalServerError
 	}

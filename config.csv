@@ -2,5 +2,4 @@ canary,http://localhost:9000/canary,GET,200,5s,1
 local-canary,http://localhost:9000/canary,GET,200,5s,3
 github,https://www.github.com/,GET,200,10m0s,3
 go-dev,https://go.dev/doc/,HEAD,200,5m0s,1
-libvirt,https://libvirt.org/,GET,200,1m0s,5
 m346,https://m346.frickelbude.ch/,GET,200,5m0s,3

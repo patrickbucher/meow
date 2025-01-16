@@ -44,7 +44,8 @@ func main() {
 			getEndpoint(w, r)
 		case http.MethodPost:
 			postEndpoint(w, r, *file)
-		// TODO: support http.MethodDelete to delete endpoints
+		case http.MethodDelete:
+			deleteEndpoint(w, r, *file)
 		default:
 			log.Printf("request from %s rejected: method %s not allowed",
 				r.RemoteAddr, r.Method)
@@ -125,6 +126,35 @@ func postEndpoint(w http.ResponseWriter, r *http.Request, file string) {
 	}
 	cfg.mu.Unlock()
 	w.WriteHeader(status)
+}
+
+func deleteEndpoint(response http.ResponseWriter, request *http.Request, file string) {
+	log.Printf("DELETE %s from %s", request.URL, request.RemoteAddr)
+
+	var status int
+
+	identifierPathParam, err := extractEndpointIdentifier(request.URL.String())
+	if err != nil {
+		log.Printf("extract endpoint identifier of %s: %v", request.URL, err)
+		response.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, exists := cfg.config[identifierPathParam]
+	if !exists {
+		status = http.StatusBadRequest
+	} else {
+		delete(cfg.config, identifierPathParam)
+		cfg.mu.Lock()
+		if err := writeConfig(cfg.config, file); err != nil {
+			status = http.StatusInternalServerError
+		} else {
+			status = http.StatusNoContent
+		}
+		cfg.mu.Unlock()
+	}
+
+	response.WriteHeader(status)
 }
 
 func getEndpoints(w http.ResponseWriter, r *http.Request) {

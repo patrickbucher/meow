@@ -1,0 +1,8 @@
+{
+    "identifier": "github",
+    "url": "https://www.github.com/",
+    "method": "GET",
+    "status_online": 200,
+    "frequency": "10m",
+    "fail_after": 3
+}

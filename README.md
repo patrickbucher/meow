@@ -10,11 +10,11 @@ meow consists of the following components:
 2. The actual monitoring daemon performing the requests.
 3. A server offering a canary endpoint for local testing.
 
-## Configuration Server (`configCmd/config.go`)
+## Configuration Server (`cmd/config/main.go`)
 
 Run it with an existing configuration CSV file (to be overwritten):
 
-    $ go run configCmd/config.go -file sample.cfg.csv
+    $ go run cmd/config/main.go -file sample.cfg.csv
 
 A configuration defines multiple endpoints, each consisting of the following
 indications:
@@ -59,12 +59,12 @@ With `endpoint.json` defined as:
 }
 ```
 
-## Probe (`probeCmd/probe.go`)
+## Probe (`cmd/probe/main.go`)
 
 The probe daemon requires a running config server, whose URL needs to be passed
 as an environment variable:
 
-    $ CONFIG_URL=http://localhost:8000 go run probeCmd/probe.go
+    $ CONFIG_URL=http://localhost:8000 go run cmd/probe/main.go
 
 The probe fetches the endpoints currently configured and probes them
 periodically. The results of the probes are written both onto the terminal
@@ -81,15 +81,16 @@ periodically. The results of the probes are written both onto the terminal
 
 The canary server provides a single endpoint (`/canary`) for local testing:
 
-    $ go run canaryCmd/canary.go
+    $ go run cmd/canary/main.go
     listen to 0.0.0.0:9000
 
 Both bind address and port can be configured:
 
-    $ go run canaryCmd/canary.go -bind localhost -port 9999
+    $ go run cmd/canary/main.go -bind localhost -port 9999
     listen to localhost:9999
 
 The endpoint can be tested using `curl`:
 
     $ curl -X GET localhost:9999/canary
     OK
+
